@@ -2,6 +2,8 @@ package seal
 
 import (
 	"bytes"
+	"regexp"
+	"strings"
 
 	"github.com/hoglandets-it/go-bankgiro/tools"
 )
@@ -13,6 +15,8 @@ const NormLfChar = 10
 const NormCrChar = 13
 
 const NormOutOfRangeReplacement = 195
+
+var RegexMatchEmptyLines = regexp.MustCompile(`\r\n[\s\t]*\r\n`)
 
 var NormSpecialReplacement map[int]int = map[int]int{
 	201: 64,
@@ -63,7 +67,7 @@ func NormalizeBytes(b []byte, buf *bytes.Buffer) {
 // Ensure that the first line of the content is a maximum of 80 characters long
 func NormalizeFirstLine(b []byte) []byte {
 	lines := bytes.Split(b, []byte{NormCrChar, NormLfChar})
-	if len(lines) == 0 || len(lines[0]) == 80 {
+	if len(lines) == 0 || len(lines[0]) <= 80 {
 		return b
 	}
 
@@ -71,11 +75,36 @@ func NormalizeFirstLine(b []byte) []byte {
 	return bytes.Join(lines, []byte{NormCrChar, NormLfChar})
 }
 
+func RemoveBlankRows(b []byte) []byte {
+	replacedRegex := RegexMatchEmptyLines.ReplaceAll(b, []byte{NormCrChar, NormLfChar})
+	trimLast := bytes.TrimRight(replacedRegex, "\r\n")
+	return trimLast
+}
+
+func RemoveBlankRowsString(s string) string {
+	replacedRegex := RegexMatchEmptyLines.ReplaceAllString(s, "\r\n")
+	trimLast := strings.TrimRight(replacedRegex, "\r\n")
+	return trimLast
+}
+
+func FormatContent(b []byte) []byte {
+	fmtContent := tools.EnsureCrlfBytes(b)
+	fmtContent = RemoveBlankRows(fmtContent)
+	return fmtContent
+}
+
+func FormatContentString(s string) string {
+	fmtContent := tools.EnsureCrlfString(s)
+	fmtContent = RemoveBlankRowsString(fmtContent)
+	return fmtContent
+}
+
 func NormalizeContent(content []byte) []byte {
 	var buf bytes.Buffer
-	leReplaced := tools.EnsureCrlfBytes(content)
+	fmtContent := FormatContent(content)
+	fmtContent = NormalizeFirstLine(fmtContent)
 
-	NormalizeBytes(leReplaced, &buf)
+	NormalizeBytes(fmtContent, &buf)
 
 	return buf.Bytes()
 }

@@ -18,6 +18,7 @@ type HmacSealer struct {
 	Hash           func() hash.Hash
 	Mac            []byte
 	OriginalData   []byte
+	FormattedData  []byte
 	NormalizedData []byte
 }
 
@@ -33,13 +34,13 @@ func (hm *HmacSealer) SetKey(key string) error {
 
 // Set the key used to seal the file as a byte array
 func (hm *HmacSealer) SetKeyBytes(key []byte) error {
-	keyLen, err := hex.Decode(hm.Key, key)
+	hexLen, err := hex.Decode(hm.Key, key)
 	if err != nil {
 		return fmt.Errorf("invalid key provided: %v", err)
 	}
 
-	if keyLen != 32 {
-		return fmt.Errorf("invalid key length: %d, expected 32", keyLen)
+	if hexLen != 16 {
+		return fmt.Errorf("invalid key length: %d, expected 16", hexLen)
 	}
 
 	return nil
@@ -89,4 +90,92 @@ func (hm *HmacSealer) CheckKvv(kvv string) error {
 	}
 
 	return fmt.Errorf("invalid KVV length: %d, expected 32 or 64", len(kvv))
+}
+
+// Update the values of the Formatted/Normalized data fields
+// Formatted will ensure the correct line endings are present
+// Normalized will normalize the content for HMAC signature
+func (hm *HmacSealer) UpdateFormatted() {
+	hm.FormattedData = FormatContent(hm.OriginalData)
+	hm.NormalizedData = NormalizeContent(hm.OriginalData)
+}
+
+// Replace the data with a given string
+func (hm *HmacSealer) SetData(data string) {
+	hm.OriginalData = []byte(data)
+	hm.UpdateFormatted()
+}
+
+// Append given string to the data
+func (hm *HmacSealer) AddData(data string) {
+	hm.OriginalData = append(hm.OriginalData, []byte(data)...)
+	hm.UpdateFormatted()
+}
+
+// Replace the data with a given byte slice
+func (hm *HmacSealer) SetDataBytes(data []byte) {
+	hm.OriginalData = data
+	hm.UpdateFormatted()
+}
+
+// Append given byte slice to the data
+func (hm *HmacSealer) AddDataBytes(data []byte) {
+	hm.OriginalData = append(hm.OriginalData, data...)
+	hm.UpdateFormatted()
+}
+
+// Validate that everything is in place to calculate the HMAC seal
+func (hm *HmacSealer) Validate() (err error) {
+	if len(hm.OriginalData) == 0 {
+		return fmt.Errorf("verification failed: no data present to be signed")
+	}
+
+	if len(hm.Key) == 0 {
+		return fmt.Errorf("verification failed: no key present to sign data")
+	}
+
+	return
+}
+
+// Calculate the HMAC seal MAC for the data
+func (hm *HmacSealer) Calculate() (err error) {
+	if err = hm.Validate(); err != nil {
+		return err
+	}
+
+	if hm.Hash == nil {
+		hm.SetHashFunction(sha256.New)
+	}
+
+	hmhash := hmac.New(hm.Hash, hm.Key)
+	hmhash.Write(hm.NormalizedData)
+
+	hm.Mac = hmhash.Sum([]byte{})
+
+	return
+}
+
+// Get the full MAC as a hex string (64 characters)
+func (hm *HmacSealer) GetMac() string {
+	return strings.ToUpper(hex.EncodeToString(hm.Mac))
+}
+
+// Get the calculated HMAC seal MAC as a hex string (32 characters) formatted for use in BG files
+func (hm *HmacSealer) GetMacBgFormat() string {
+	return hm.GetMac()[0:32]
+}
+
+// Get the calculated HMAC seal MAC as a bytestring
+func (hm *HmacSealer) GetMacBytes() []byte {
+	return hm.Mac
+}
+
+// Get the KVV value as a hex string (64 characters)
+func (hm *HmacSealer) GetKvv() string {
+	return strings.ToUpper(hex.EncodeToString(hm.KeyVer))
+}
+
+// Get the KVV value as a hex string (32 characters) formatted for use in BG files
+func (hm *HmacSealer) GetKvvBgFormat() string {
+	return hm.GetKvv()[0:32]
 }
