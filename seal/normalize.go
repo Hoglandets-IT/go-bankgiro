@@ -77,13 +77,15 @@ func NormalizeFirstLine(b []byte) []byte {
 
 func RemoveBlankRows(b []byte) []byte {
 	replacedRegex := RegexMatchEmptyLines.ReplaceAll(b, []byte{NormCrChar, NormLfChar})
-	trimLast := bytes.TrimRight(replacedRegex, "\r\n")
+	replacedRegex = RegexMatchEmptyLines.ReplaceAll(replacedRegex, []byte{NormCrChar, NormLfChar})
+	trimLast := bytes.TrimRight(replacedRegex, "\r\n\t")
 	return trimLast
 }
 
 func RemoveBlankRowsString(s string) string {
 	replacedRegex := RegexMatchEmptyLines.ReplaceAllString(s, "\r\n")
-	trimLast := strings.TrimRight(replacedRegex, "\r\n")
+	replacedRegex = RegexMatchEmptyLines.ReplaceAllString(replacedRegex, "\r\n")
+	trimLast := strings.TrimRight(replacedRegex, "\r\n\t")
 	return trimLast
 }
 

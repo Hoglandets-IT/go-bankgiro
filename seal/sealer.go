@@ -1,12 +1,16 @@
 package seal
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"hash"
 	"strings"
+	"time"
+
+	"github.com/hoglandets-it/go-bankgiro/tools"
 )
 
 // Key: the hex-decoded HMAC key used to seal the file
@@ -17,14 +21,30 @@ type HmacSealer struct {
 	KeyVer         []byte
 	Hash           func() hash.Hash
 	Mac            []byte
+	SealDate       string
 	OriginalData   []byte
+	PrefixedData   []byte
 	FormattedData  []byte
 	NormalizedData []byte
 }
 
+func (hm *HmacSealer) EnsureNoSignature() error {
+	if hm.Mac != nil {
+		return fmt.Errorf("cannot change settings after signature has been calculated")
+	}
+
+	return nil
+}
+
 // Set the hash function used to hash the file contents
-func (hm *HmacSealer) SetHashFunction(hashFunc func() hash.Hash) {
+func (hm *HmacSealer) SetHashFunction(hashFunc func() hash.Hash) error {
+	if err := hm.EnsureNoSignature(); err != nil {
+		return err
+	}
+
 	hm.Hash = hashFunc
+
+	return nil
 }
 
 // Set the key used to seal the file
@@ -34,6 +54,11 @@ func (hm *HmacSealer) SetKey(key string) error {
 
 // Set the key used to seal the file as a byte array
 func (hm *HmacSealer) SetKeyBytes(key []byte) error {
+	if err := hm.EnsureNoSignature(); err != nil {
+		return err
+	}
+
+	hm.Key = make([]byte, 16)
 	hexLen, err := hex.Decode(hm.Key, key)
 	if err != nil {
 		return fmt.Errorf("invalid key provided: %v", err)
@@ -43,7 +68,7 @@ func (hm *HmacSealer) SetKeyBytes(key []byte) error {
 		return fmt.Errorf("invalid key length: %d, expected 16", hexLen)
 	}
 
-	return nil
+	return hm.GenerateKvv()
 }
 
 // Generate and store the KVV Value
@@ -92,36 +117,79 @@ func (hm *HmacSealer) CheckKvv(kvv string) error {
 	return fmt.Errorf("invalid KVV length: %d, expected 32 or 64", len(kvv))
 }
 
+func PrefixContent(content []byte, sealDate string) []byte {
+	if len(content) == 0 || bytes.HasPrefix(content, []byte("00")) {
+		return content
+	}
+
+	prefix := fmt.Sprintf("00%sHMAC%s%s", sealDate, strings.Repeat(" ", 68), "\r\n")
+
+	return append([]byte(prefix), content...)
+}
+
 // Update the values of the Formatted/Normalized data fields
 // Formatted will ensure the correct line endings are present
 // Normalized will normalize the content for HMAC signature
-func (hm *HmacSealer) UpdateFormatted() {
-	hm.FormattedData = FormatContent(hm.OriginalData)
-	hm.NormalizedData = NormalizeContent(hm.OriginalData)
+func (hm *HmacSealer) UpdateFormatted() error {
+	if err := hm.EnsureNoSignature(); err != nil {
+		return err
+	}
+
+	if hm.SealDate == "" {
+		hm.SealDate = time.Now().Format("060102")
+	}
+	hm.PrefixedData = PrefixContent(hm.OriginalData, hm.SealDate)
+	hm.FormattedData = FormatContent(hm.PrefixedData)
+	hm.NormalizedData = NormalizeContent(hm.PrefixedData)
+
+	return nil
 }
 
 // Replace the data with a given string
-func (hm *HmacSealer) SetData(data string) {
+func (hm *HmacSealer) SetData(data string) error {
+	if err := hm.EnsureNoSignature(); err != nil {
+		return err
+	}
 	hm.OriginalData = []byte(data)
-	hm.UpdateFormatted()
+	return hm.UpdateFormatted()
 }
 
 // Append given string to the data
-func (hm *HmacSealer) AddData(data string) {
+func (hm *HmacSealer) AddData(data string) error {
+	if err := hm.EnsureNoSignature(); err != nil {
+		return err
+	}
+
 	hm.OriginalData = append(hm.OriginalData, []byte(data)...)
-	hm.UpdateFormatted()
+	return hm.UpdateFormatted()
 }
 
 // Replace the data with a given byte slice
-func (hm *HmacSealer) SetDataBytes(data []byte) {
+func (hm *HmacSealer) SetDataBytes(data []byte) error {
+	if err := hm.EnsureNoSignature(); err != nil {
+		return err
+	}
 	hm.OriginalData = data
-	hm.UpdateFormatted()
+	return hm.UpdateFormatted()
 }
 
 // Append given byte slice to the data
-func (hm *HmacSealer) AddDataBytes(data []byte) {
+func (hm *HmacSealer) AddDataBytes(data []byte) error {
+	if err := hm.EnsureNoSignature(); err != nil {
+		return err
+	}
 	hm.OriginalData = append(hm.OriginalData, data...)
-	hm.UpdateFormatted()
+	return hm.UpdateFormatted()
+}
+
+// Set a custom seal date
+func (hm *HmacSealer) SetSealDate(date string) error {
+	if err := hm.EnsureNoSignature(); err != nil {
+		return err
+	}
+
+	hm.SealDate = date
+	return hm.UpdateFormatted()
 }
 
 // Validate that everything is in place to calculate the HMAC seal
@@ -178,4 +246,24 @@ func (hm *HmacSealer) GetKvv() string {
 // Get the KVV value as a hex string (32 characters) formatted for use in BG files
 func (hm *HmacSealer) GetKvvBgFormat() string {
 	return hm.GetKvv()[0:32]
+}
+
+func (hm *HmacSealer) GetSignedContent() string {
+	signature := fmt.Sprintf(
+		"99%s%s%s%s",
+		time.Now().Format("060102"),
+		hm.GetKvvBgFormat(),
+		hm.GetMacBgFormat(),
+		strings.Repeat(" ", 8),
+	)
+
+	return tools.StringEnsureIso(
+		strings.Join(
+			[]string{
+				string(hm.PrefixedData),
+				signature,
+			},
+			"\r\n",
+		),
+	)
 }

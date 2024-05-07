@@ -43,6 +43,16 @@ func StringIsoEncoder(input string) (string, error) {
 	return encodedString, nil
 }
 
+func StringIsoDecoder(input string) (string, error) {
+	decoder := charmap.ISO8859_1.NewDecoder()
+	decodedString, err := decoder.String(input)
+	if err != nil {
+		return "", fmt.Errorf("error transforming string: %w", err)
+	}
+
+	return decodedString, nil
+}
+
 func BytesIsoEncoder(input []byte) ([]byte, error) {
 	encoder := charmap.ISO8859_1.NewEncoder()
 	encodedBytes, err := encoder.Bytes(input)
@@ -51,6 +61,16 @@ func BytesIsoEncoder(input []byte) ([]byte, error) {
 	}
 
 	return encodedBytes, nil
+}
+
+func BytesIsoDecoder(input []byte) ([]byte, error) {
+	decoder := charmap.ISO8859_1.NewDecoder()
+	decodedBytes, err := decoder.Bytes(input)
+	if err != nil {
+		return []byte{}, fmt.Errorf("error transforming bytes: %w", err)
+	}
+
+	return decodedBytes, nil
 }
 
 func IdentifyInvalidUtf8(text string) error {
