@@ -34,11 +34,10 @@ jobs:
     - name: Goreleaser
       uses: goreleaser/goreleaser-action@v2
       with:
-        version: latest
-        args: release --rm-dist
+        version: ${{ github.event.release.tag.name }}
+        args: release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
     
     - name: Push to package repository
       env:
@@ -48,9 +47,7 @@ jobs:
         DEB_VERSION: ${{ matrix.deb-version }}
       run: |
         echo "Pushing to package repository"
-        cd dist
-        for file in ./*.deb; do
+        for file in ./dist/*.deb; do
           echo "Uploading $file"
-          curl --user "${HOGLANDET_DEB_USER}:${HOGLANDET_DEB_KEY}" --upload-file $file "${HOGLANDET_DEB_URL}/${DEB_VERSION}/main/upload"
-  
-    
+          curl --user "${HOGLANDET_DEB_USER}:${HOGLANDET_DEB_KEY}" --upload-file "$file" "${HOGLANDET_DEB_URL}/${DEB_VERSION}/main/upload"
+        done

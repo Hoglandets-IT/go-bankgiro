@@ -54,7 +54,7 @@ nfpms:
       - deb
       - apk
     bindir: /usr/local/bin
-    prerelease: beta1
+    # prerelease: beta1
 
 release:
   gitea:
