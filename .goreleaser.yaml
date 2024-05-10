@@ -60,9 +60,7 @@ release:
   gitea:
     owner: debian
     name: go-bankgiro
-  github:
-    owner: hoglandet
-    name: go-bankgiro
+
 
 gitea_urls:
   api: https://git-registry.hoglandet.se/api/v1
