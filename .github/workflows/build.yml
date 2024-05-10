@@ -13,60 +13,16 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go-os:
-          - linux
-          # - windows
-          # - darwin
-        go-arch:
-          - amd64
-          # - arm64
-
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v2
-
-      - name: Setup Golang
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.22
-      
-      - name: Prepare Build
-        run: |
-          go get -v -t -d 
-          go mod download
-          go mod verify
-          go mod tidy
-          mkdir releases
-
-      - name: Build
-        env:
-          GOOS: ${{ matrix.go-os }}
-          GOARCH: ${{ matrix.go-arch }}
-          FILE_EXT: ${{ matrix.go-os == 'windows' && '.exe' || '' }}
-        run: |
-          go build -o releases/go-bankgiro-${GOOS}-${GOARCH}${FILE_EXT} main.go
-      
-      - name: Create Debian Packages
-        if: matrix.go-os == 'linux'
-        env:
-          GOOS: "linux"
-          GOARCH: ${{ matrix.go-arch }}
-        run: |
-          sudo apt-get install -y build-essential fakeroot devscripts debhelper dh-make dh-systemd lintian dh-golang
-          dh_make -s -c gpl -f ../releases/go-bankgiro-linux-${GOARCH}
-          debuild -us -uc
-      
-      - name: Create release archive
-        run: |
-          tar -czvf releases.tar.gz releases
-      
-      - name: Upload Release
-        uses: actions/upload-artifact@v2
-        with:
-          name: releases
-          path: releases.tar.gz
+    - uses: actions/checkout@v2
+    - name: Goreleaser
+      uses: goreleaser/goreleaser-action@v2
+      with:
+        version: latest
+        args: release --rm-dist
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
       
   
     
