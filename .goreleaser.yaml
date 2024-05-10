@@ -56,3 +56,15 @@ nfpms:
     bindir: /usr/local/bin
     prerelease: beta1
 
+release:
+  gitea:
+    owner: debian
+    name: go-bankgiro
+  ids:
+    - go-bankgiro
+
+gitea_urls:
+  api: https://git-registry.hoglandet.se/api/v1
+  download: https://git-registry.hoglandet.se
+  # set to true if you use a self-signed certificate
+  skip_tls_verify: false
