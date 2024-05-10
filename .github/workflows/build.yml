@@ -95,7 +95,7 @@ jobs:
           HOGLANDET_DEB_KEY: ${{ secrets.HOGLANDET_DEB_KEY }}
           HOGLANDET_RPM_URL: ${{ secrets.HOGLANDET_RPM_URL }}
         run: |
-          for file in $APK_FILELIST; do
+          for file in $RPM_FILELIST; do
             echo "Uploading $file to ${HOGLANDET_APK_URL}"
             curl --user "${HOGLANDET_DEB_USER}:${HOGLANDET_DEB_KEY}" --upload-file "$file" "${HOGLANDET_RPM_URL}"
           done
