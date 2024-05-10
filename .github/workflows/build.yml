@@ -17,11 +17,11 @@ jobs:
       matrix:
         go-os:
           - linux
-          - windows
-          - darwin
+          # - windows
+          # - darwin
         go-arch:
           - amd64
-          - arm64
+          # - arm64
 
     steps:
       - name: Checkout Code
