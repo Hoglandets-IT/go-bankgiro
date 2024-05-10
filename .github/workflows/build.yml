@@ -34,7 +34,7 @@ jobs:
         name: release
         path: dist/**
 
-  publish:
+  publish-debian:
     needs: build
     runs-on: ubuntu-latest
     strategy:
@@ -42,12 +42,13 @@ jobs:
         deb-version:
           - stable
           - unstable
-          - bullseye
           - bookworm
+          - bullseye
+          - noble
+          - mantic
           - focal
-          - groovy
-          - hirsute
-          - trusty
+          - jammy
+          - lunar
     steps:
       - uses: actions/download-artifact@v4
       - name: Find files
@@ -68,4 +69,28 @@ jobs:
           for file in $FILELIST; do
             echo "Uploading $file to ${HOGLANDET_DEB_URL}/${DEB_VERSION}/main/upload"
             curl --user "${HOGLANDET_DEB_USER}:${HOGLANDET_DEB_KEY}" --upload-file "$file" "${HOGLANDET_DEB_URL}/${DEB_VERSION}/main/upload"
+          done
+  
+  publish-alpine:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+      - name: Find files
+        id: Find
+        run: |
+          {
+            echo 'FILELIST<<EOF'
+            find . -name '*.apk' -type f -print
+            echo EOF
+          } >> "$GITHUB_ENV"
+      - name: Push to package repository (any)
+        env:
+          HOGLANDET_DEB_USER: ${{ secrets.HOGLANDET_DEB_USER }}
+          HOGLANDET_DEB_KEY: ${{ secrets.HOGLANDET_DEB_KEY }}
+          HOGLANDET_APK_URL: ${{ secrets.HOGLANDET_APK_URL }}
+        run: |
+          for file in $FILELIST; do
+            echo "Uploading $file to ${HOGLANDET_APK_URL}"
+            curl --user "${HOGLANDET_DEB_USER}:${HOGLANDET_DEB_KEY}" --upload-file "$file" "${HOGLANDET_APK_URL}"
           done
