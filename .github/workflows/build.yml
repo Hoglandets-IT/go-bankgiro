@@ -34,63 +34,68 @@ jobs:
         name: release
         path: dist/**
 
-  publish-debian:
+  publish-packages:
     needs: build
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        deb-version:
-          - stable
-          - unstable
-          - bookworm
-          - bullseye
-          - noble
-          - mantic
-          - focal
-          - jammy
-          - lunar
     steps:
       - uses: actions/download-artifact@v4
-      - name: Find files
-        id: Find
+      
+      - name: Find DEB files
+        id: find-deb
         run: |
           {
-            echo 'FILELIST<<EOF'
+            echo 'DEB_FILELIST<<EOF'
             find . -name '*.deb' -type f -print
             echo EOF
           } >> "$GITHUB_ENV"
-      - name: Push to package repository
+      
+      - name: Find APK files
+        id: find-apk
+        run: |
+          {
+            echo 'APK_FILELIST<<EOF'
+            find . -name '*.apk' -type f -print
+            echo EOF
+          } >> "$GITHUB_ENV"
+      
+      - name: Find RPM files
+        id: find-rpm
+        run: |
+          {
+            echo 'RPM_FILELIST<<EOF'
+            find . -name '*.rpm' -type f -print
+            echo EOF
+          } >> "$GITHUB_ENV"
+      
+      - name: Push DEB files
         env:
           HOGLANDET_DEB_USER: ${{ secrets.HOGLANDET_DEB_USER }}
           HOGLANDET_DEB_KEY: ${{ secrets.HOGLANDET_DEB_KEY }}
           HOGLANDET_DEB_URL: ${{ secrets.HOGLANDET_DEB_URL }}
-          DEB_VERSION: ${{ matrix.deb-version }}
         run: |
-          for file in $FILELIST; do
-            echo "Uploading $file to ${HOGLANDET_DEB_URL}/${DEB_VERSION}/main/upload"
-            curl --user "${HOGLANDET_DEB_USER}:${HOGLANDET_DEB_KEY}" --upload-file "$file" "${HOGLANDET_DEB_URL}/${DEB_VERSION}/main/upload"
+          for file in $DEB_FILELIST; do
+            echo "Uploading $file to ${HOGLANDET_DEB_URL}/stable/main/upload"
+            curl --user "${HOGLANDET_DEB_USER}:${HOGLANDET_DEB_KEY}" --upload-file "$file" "${HOGLANDET_DEB_URL}"
           done
-  
-  publish-alpine:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4
-      - name: Find files
-        id: Find
-        run: |
-          {
-            echo 'FILELIST<<EOF'
-            find . -name '*.apk' -type f -print
-            echo EOF
-          } >> "$GITHUB_ENV"
-      - name: Push to package repository (any)
+      
+      - name: Push APK files
         env:
           HOGLANDET_DEB_USER: ${{ secrets.HOGLANDET_DEB_USER }}
           HOGLANDET_DEB_KEY: ${{ secrets.HOGLANDET_DEB_KEY }}
           HOGLANDET_APK_URL: ${{ secrets.HOGLANDET_APK_URL }}
         run: |
-          for file in $FILELIST; do
+          for file in $APK_FILELIST; do
             echo "Uploading $file to ${HOGLANDET_APK_URL}"
             curl --user "${HOGLANDET_DEB_USER}:${HOGLANDET_DEB_KEY}" --upload-file "$file" "${HOGLANDET_APK_URL}"
+          done
+      
+      - name: Push RPM files
+        env:
+          HOGLANDET_DEB_USER: ${{ secrets.HOGLANDET_DEB_USER }}
+          HOGLANDET_DEB_KEY: ${{ secrets.HOGLANDET_DEB_KEY }}
+          HOGLANDET_RPM_URL: ${{ secrets.HOGLANDET_RPM_URL }}
+        run: |
+          for file in $APK_FILELIST; do
+            echo "Uploading $file to ${HOGLANDET_APK_URL}"
+            curl --user "${HOGLANDET_DEB_USER}:${HOGLANDET_DEB_KEY}" --upload-file "$file" "${HOGLANDET_RPM_URL}"
           done
