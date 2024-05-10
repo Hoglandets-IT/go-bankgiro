@@ -50,6 +50,14 @@ jobs:
           - trusty
     steps:
       - uses: actions/download-artifact@v4
+      - name: Find files
+        id: Find
+        run: |
+          {
+            echo 'FILELIST<<EOF'
+            find dist -name '*.deb' -type f -print
+            echo EOF
+          } >> "$GITHUB_ENV"
       - name: Push to package repository
         env:
           HOGLANDET_DEB_USER: ${{ secrets.HOGLANDET_DEB_USER }}
@@ -57,8 +65,7 @@ jobs:
           HOGLANDET_DEB_URL: ${{ secrets.HOGLANDET_DEB_URL }}
           DEB_VERSION: ${{ matrix.deb-version }}
         run: |
-          echo "Pushing to package repository"
-          for file in ./dist/*.deb; do
-            echo "Uploading $file"
+          for file in $FILELIST; do
+            echo "Uploading $file to ${HOGLANDET_DEB_URL}/${DEB_VERSION}/main/upload"
             curl --user "${HOGLANDET_DEB_USER}:${HOGLANDET_DEB_KEY}" --upload-file "$file" "${HOGLANDET_DEB_URL}/${DEB_VERSION}/main/upload"
           done
