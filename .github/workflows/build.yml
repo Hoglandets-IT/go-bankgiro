@@ -14,16 +14,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        deb-version:
-          - bullseye
-          - buster
-          - bookworm
-          - focal
-          - groovy
-          - hirsute
-          - trusty
     steps:
     - uses: actions/checkout@v2
     - name: Install go
@@ -38,16 +28,37 @@ jobs:
         args: release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    
-    - name: Push to package repository
-      env:
-        HOGLANDET_DEB_USER: ${{ secrets.HOGLANDET_DEB_USER }}
-        HOGLANDET_DEB_KEY: ${{ secrets.HOGLANDET_DEB_KEY }}
-        HOGLANDET_DEB_URL: ${{ secrets.HOGLANDET_DEB_URL }}
-        DEB_VERSION: ${{ matrix.deb-version }}
-      run: |
-        echo "Pushing to package repository"
-        for file in ./dist/*.deb; do
-          echo "Uploading $file"
-          curl --user "${HOGLANDET_DEB_USER}:${HOGLANDET_DEB_KEY}" --upload-file "$file" "${HOGLANDET_DEB_URL}/${DEB_VERSION}/main/upload"
-        done
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: release
+        path: dist/*
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        deb-version:
+          - stable
+          - unstable
+          - bullseye
+          - bookworm
+          - focal
+          - groovy
+          - hirsute
+          - trusty
+    steps:
+      - uses: actions/download-artifact@v4
+      - name: Push to package repository
+        env:
+          HOGLANDET_DEB_USER: ${{ secrets.HOGLANDET_DEB_USER }}
+          HOGLANDET_DEB_KEY: ${{ secrets.HOGLANDET_DEB_KEY }}
+          HOGLANDET_DEB_URL: ${{ secrets.HOGLANDET_DEB_URL }}
+          DEB_VERSION: ${{ matrix.deb-version }}
+        run: |
+          echo "Pushing to package repository"
+          for file in ./dist/*.deb; do
+            echo "Uploading $file"
+            curl --user "${HOGLANDET_DEB_USER}:${HOGLANDET_DEB_KEY}" --upload-file "$file" "${HOGLANDET_DEB_URL}/${DEB_VERSION}/main/upload"
+          done
