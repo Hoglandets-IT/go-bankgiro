@@ -54,7 +54,7 @@ jobs:
           GOOS: "linux"
           GOARCH: ${{ matrix.go-arch }}
         run: |
-          sudo apt-get install -y build-essential fakeroot devscripts debhelper dh-make dh-systemd lintian dh-golang
+          apt-get install -y build-essential fakeroot devscripts debhelper dh-make dh-systemd lintian dh-golang
           dh_make -s -c gpl -f ../releases/go-bankgiro-linux-${GOARCH}
           debuild -us -uc
       
