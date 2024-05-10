@@ -58,6 +58,15 @@ jobs:
           dh_make -s -c gpl -f ../releases/go-bankgiro-linux-${GOARCH}
           debuild -us -uc
       
+      - name: Create release archive
+        run: |
+          tar -czvf releases.tar.gz releases
+      
+      - name: Upload Release
+        uses: actions/upload-artifact@v2
+        with:
+          name: releases
+          path: releases.tar.gz
       
   
     
