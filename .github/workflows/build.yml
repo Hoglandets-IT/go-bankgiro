@@ -55,7 +55,7 @@ jobs:
         run: |
           {
             echo 'FILELIST<<EOF'
-            find dist -name '*.deb' -type f -print
+            find . -name '*.deb' -type f -print
             echo EOF
           } >> "$GITHUB_ENV"
       - name: Push to package repository
