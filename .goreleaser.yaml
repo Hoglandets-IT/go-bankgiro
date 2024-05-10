@@ -46,7 +46,7 @@ changelog:
 
 nfpms:
   - id: go-bankgiro
-    package_name: "Go Bankgiro"
+    package_name: "go-bankgiro"
     description: "Bankgiro file sealing for golang"
     vendor: "Höglandets IT"
     maintainer: Hoglandets IT <kod@hoglandet.se>
