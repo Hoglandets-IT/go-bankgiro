@@ -24,3 +24,5 @@ go.work
 
 test.txt
 test-signed.txt
+
+dist/
