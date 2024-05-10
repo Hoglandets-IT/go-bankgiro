@@ -1,0 +1,63 @@
+name: Build Packages
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+# Matrix
+
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-os:
+          - linux
+          - windows
+          - darwin
+        go-arch:
+          - amd64
+          - arm64
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Setup Golang
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.22
+      
+      - name: Prepare Build
+        run: |
+          go get -v -t -d 
+          go mod download
+          go mod verify
+          go mod tidy
+          mkdir releases
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.go-os }}
+          GOARCH: ${{ matrix.go-arch }}
+          FILE_EXT: ${{ matrix.go-os == 'windows' && '.exe' || '' }}
+        run: |
+          go build -o releases/go-bankgiro-${GOOS}-${GOARCH}${FILE_EXT} main.go
+      
+      - name: Create Debian Packages
+        if: matrix.go-os == 'linux'
+        env:
+          GOOS: "linux"
+          GOARCH: ${{ matrix.go-arch }}
+        run: |
+          sudo apt-get install -y build-essential fakeroot devscripts debhelper dh-make dh-systemd lintian dh-golang
+          dh_make -s -c gpl -f ../releases/go-bankgiro-linux-${GOARCH}
+          debuild -us -uc
+      
+      
+  
+    
