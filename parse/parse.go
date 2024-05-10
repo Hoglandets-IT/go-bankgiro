@@ -2,8 +2,9 @@ package parse
 
 import (
 	"fmt"
-	"slices"
 	"strings"
+
+	"github.com/hoglandets-it/go-bankgiro/tools"
 )
 
 type SectionInterface struct {
@@ -186,7 +187,7 @@ func (sec *AutogiroSection) AddLine(line string) error {
 		sec.Errors = append(sec.Errors, fmt.Sprintf("Invalid line length: %d - *%s*", len(line), line))
 	}
 	sec.Rows = append(sec.Rows, line)
-	if !slices.Contains(sec.SectionType.AllowedSections, line[0:2]) {
+	if !tools.SliceContains(sec.SectionType.AllowedSections, line[0:2]) {
 		sec.Errors = append(sec.Errors, fmt.Sprintf("Invalid section found: %s", line[0:2]))
 	}
 

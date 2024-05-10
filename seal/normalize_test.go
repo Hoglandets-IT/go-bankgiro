@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
-	"slices"
 	"testing"
 
 	"github.com/hoglandets-it/go-bankgiro/seal"
@@ -96,11 +95,11 @@ func TestOutOfBounds(t *testing.T) {
 	expectedLower := tools.BytesEnsureIso(bytes.Repeat([]byte(OutOfBoundsReplacement), oobLowerLen))
 	expectedUpper := tools.BytesEnsureIso(bytes.Repeat([]byte(OutOfBoundsReplacement), oobUpperLen))
 
-	if !slices.Equal(actualLower, expectedLower) {
+	if !tools.BytesliceEqual(actualLower, expectedLower) {
 		ErrorPrintComparison(t, actualLower, expectedLower)
 	}
 
-	if !slices.Equal(actualUpper, expectedUpper) {
+	if !tools.BytesliceEqual(actualUpper, expectedUpper) {
 		ErrorPrintComparison(t, actualUpper, expectedUpper)
 	}
 }
@@ -140,7 +139,7 @@ func TestFileNormalization(t *testing.T) {
 
 		actualContent := seal.NormalizeContent(isoContent)
 
-		if !slices.Equal(actualContent, isoExpectedContent) {
+		if !tools.BytesliceEqual(actualContent, isoExpectedContent) {
 			t.Errorf("Normalization failed for file %s: got/expected \r\n%s \r\n%s", name, actualContent, isoExpectedContent)
 		}
 	}
