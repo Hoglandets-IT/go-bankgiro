@@ -1,14 +1,8 @@
-name: Build Packages
+name: Build and Publish Packages
 
 on:
-  # push:
-  #   branches: [ main ]
-  # pull_request:
-  #   branches: [ main ]
   push:
-    tags: ["*"]
-# Matrix
-
+    tags: ["*.*.*"]
 
 
 jobs:
