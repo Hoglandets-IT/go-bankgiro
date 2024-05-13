@@ -20,6 +20,10 @@ func TestAgainstExpected(t *testing.T) {
 	}
 
 	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+
 		t.Log("Testing " + file.Name())
 
 		content, err := os.ReadFile("/mnt/f/BankFiles/AutogiroInbound/" + file.Name())

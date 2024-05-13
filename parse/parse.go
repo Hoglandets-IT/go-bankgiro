@@ -26,11 +26,13 @@ type SectionType struct {
 }
 
 const (
-	HMAC_HEADER       = "00"
-	SECTION_START     = "01"
-	SECTION_END       = "09"
-	HMAC_SECTION_SEAL = "08"
-	HMAC_FILE_SEAL    = "99"
+	HMAC_HEADER         = "00"
+	SECTION_START       = "01"
+	SECTION_END         = "09"
+	SECTION_START_IBANK = "51"
+	SECTION_END_IBANK   = "59"
+	HMAC_SECTION_SEAL   = "08"
+	HMAC_FILE_SEAL      = "99"
 )
 
 var SectionTypes []SectionType = []SectionType{
@@ -93,6 +95,16 @@ var SectionTypes []SectionType = []SectionType{
 		AllowedSections: []string{"73"},
 		CustomerNumber:  []int{64, 70},
 		AccountNumber:   []int{70, 80},
+	},
+	{
+		Name:            "Emedgivande Internetbank",
+		Code:            "ag-emedgiv",
+		Tk01Start:       24,
+		Tk01End:         34,
+		Match:           "AG-EMEDGIV",
+		AllowedSections: []string{"52", "53", "54", "55", "56"},
+		CustomerNumber:  []int{0, 0},
+		AccountNumber:   []int{15, 24},
 	},
 	{ // OK
 		Name:            "Avvisade Betalningar (Nytt Format)",
@@ -258,7 +270,7 @@ func (file *AutogiroFile) ParseFile(data string) error {
 
 		// Identify Section Starter
 		if !currentSection.StartFound {
-			if !strings.HasPrefix(row, SECTION_START) {
+			if !strings.HasPrefix(row, SECTION_START) && !strings.HasPrefix(row, SECTION_START_IBANK) {
 				return fmt.Errorf("no section start found where there should be one")
 			}
 
@@ -272,7 +284,7 @@ func (file *AutogiroFile) ParseFile(data string) error {
 
 		// Identify section end
 		if currentSection.StartFound && !currentSection.EndFound {
-			if strings.HasPrefix(row, SECTION_END) {
+			if strings.HasPrefix(row, SECTION_END) || strings.HasPrefix(row, SECTION_END_IBANK) {
 				lookaheadRow := ""
 				if len(file.Content) >= i+2 {
 					lookaheadRow = file.Content[i+1]
