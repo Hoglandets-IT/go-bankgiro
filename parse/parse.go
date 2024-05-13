@@ -104,7 +104,7 @@ var SectionTypes []SectionType = []SectionType{
 		Match:           "AG-EMEDGIV",
 		AllowedSections: []string{"52", "53", "54", "55", "56"},
 		CustomerNumber:  []int{0, 0},
-		AccountNumber:   []int{15, 24},
+		AccountNumber:   []int{14, 24},
 	},
 	{ // OK
 		Name:            "Avvisade Betalningar (Nytt Format)",
